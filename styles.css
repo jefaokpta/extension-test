@@ -1,12 +1,17 @@
-/* Estilo do destaque de telefone */
-.phone-highlight {
-  background: #fff3a3; /* amarelo claro */
-  border-radius: 3px;
-  padding: 0 2px;
-  box-shadow: 0 0 0 2px rgba(255, 235, 59, 0.35) inset;
-  transition: background-color 0.2s ease-in-out;
+.popup{
+    background-color: #f8f8f8;
+    width: 300px;
+    padding: 20px;
+    display: flex;
 }
-
-.phone-highlight:hover {
-  background: #ffe768;
+.input{
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    margin-right: 10px;
+}
+.button{
+    padding: 10px 20px;
+    background-color: #007bff;
 }
