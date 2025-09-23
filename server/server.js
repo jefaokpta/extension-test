@@ -10,7 +10,7 @@ wss.on('connection', function connection(ws) {
 
     // Envia uma mensagem a cada 5 segundos
     const interval = setInterval(() => {
-        const message = `Mensagem do servidor: ${new Date().toLocaleTimeString()}`;
+        const message = `Msg: ${new Date().toLocaleTimeString()}`;
         console.log(`Enviando: "${message}"`);
         ws.send(message);
     }, 5000);
