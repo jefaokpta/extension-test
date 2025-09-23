@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "Realce de Telefones",
+  "version": "1.0.0",
+  "description": "Captura números de telefone presentes na página e os destaca visualmente.",
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "css": ["styles.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}
