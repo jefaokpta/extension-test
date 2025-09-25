@@ -1,29 +1,23 @@
 // popup.js
 // Atualiza o input "Telefone" com mensagens recebidas do background (WebSocket)
 
-document.addEventListener('DOMContentLoaded', () => {
-  const input = document.querySelector('.input');
-  if (!input) return;
+const phoneInput = document.querySelector('.input');
+const callBtn = document.querySelector('.button');
 
-  // Preenche com a última mensagem disponível ao abrir o popup
-  try {
-    chrome.runtime.sendMessage({ type: 'get_latest_message' }, (response) => {
-      if (chrome.runtime.lastError) {
-        // Sem problema se o service worker não estiver disponível
+callBtn.addEventListener('click', (e) => {
+    if (!phoneInput.value) {
+        alert('Por favor, insira um número de telefone.');
         return;
-      }
-      if (response && response.data != null) {
-        input.value = String(response.data);
-      }
-    });
-  } catch (_) {}
+    }
+    chrome.runtime.sendMessage({ type: 'dial', phoneNumber: phoneInput.value });
+})
 
-  // Atualiza em tempo real quando novas mensagens chegarem
-  try {
-    chrome.runtime.onMessage.addListener((message) => {
-      if (message && message.type === 'ws_message') {
-        input.value = String(message.payload ?? '');
-      }
-    });
-  } catch (_) {}
-});
+// function getAudioPermission() {
+//     navigator.mediaDevices.getUserMedia({ audio: true })
+//         .then(() => {
+//             console.log('Permissão de áudio concedida.');
+//         })
+//         .catch((error) => {
+//             console.error('Erro ao obter permissão de áudio:', error);
+//         });
+// }

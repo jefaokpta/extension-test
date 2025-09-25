@@ -3,7 +3,7 @@
   "name": "Realce de Telefones",
   "version": "1.0.0",
   "description": "Captura números de telefone presentes na página e os destaca visualmente.",
-  "permissions": ["activeTab", "scripting"],
+  "permissions": ["activeTab", "scripting", "microphone"],
   "action": {
     "default_title": "Realce de Telefones",
     "default_popup": "popup.html"
