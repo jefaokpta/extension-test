@@ -1,90 +1,51 @@
-// Load JsSIP UMD build and use the global it registers (self.JsSIP) in MV3 service worker modules.
-import './libs/jssip.min.js';
-const JsSIP = self.JsSIP || globalThis.JsSIP;
+// ua-worker.js - MV3 service worker
+// Ensures a persistent offscreen document exists to host the JsSIP UA and play audio.
 
-import { credentials } from './libs/credentials.js';
-
-let ua;           // JsSIP.UA
-let session = null; // JsSIP.RTCSession atual
-
-function startWebphone(){
-    if (!JsSIP || !JsSIP.WebSocketInterface) {
-        console.error('JsSIP not loaded or WebSocketInterface not available');
-        return;
-    }
-    const socket = new JsSIP.WebSocketInterface(`wss://${credentials.domain}:${credentials.port}/ws`);
-    const configuration = {
-        sockets: [socket],
-        uri: `sip:${credentials.username}@${credentials.domain}`,
-        password: credentials.password,
-        register: false,
-    };
-    ua = new JsSIP.UA(configuration);
-
-    // Eventos do UAw
-    ua.on('connected', () => log('Socket conectado (WSS).'));
-    ua.on('disconnected', () => log('Socket desconectado.'));
-    ua.on('registered', () => log('Registrado no servidor SIP.'));
-    ua.on('unregistered', () => log('Não registrado.'));
-    ua.on('registrationFailed', (e) => log('Falha no registro: ' + (e.cause || 'desconhecida')));
-
-    // Apenas para depuração simples:
-    ua.on('newRTCSession', (ev) => {
-        session = ev.session;
-        console.log('[PHONE] Nova Sessao ', ev.originator)
-        if (ev.originator === 'remote') {
-            log('Chamada recebida (ignorada neste MVP).');
-        } else {
-            attachAudioToSession(ev.session)
-        }
+async function ensureOffscreenDocument() {
+  // If already exists, do nothing
+  if (chrome.offscreen && chrome.offscreen.hasDocument) {
+    const hasDoc = await chrome.offscreen.hasDocument?.();
+    if (hasDoc) return;
+  }
+  try {
+    await chrome.offscreen.createDocument({
+      url: 'offscreen.html',
+      reasons: ['AUDIO_PLAYBACK'],
+      justification: 'Reproduzir áudio remoto do WebPhone (SIP) enquanto o popup está fechado.'
     });
-    ua.start();
+    console.log('[SW] Offscreen document criado.');
+  } catch (e) {
+    console.warn('[SW] Falha ao criar offscreen document (pode já existir):', e?.message || e);
+  }
 }
 
-startWebphone();
-
-function dial(phoneNumber) {
-    log('Chamando ' + phoneNumber);
-    const sipCall = 'sip:' + phoneNumber + '@' + credentials.domain;
-    const options = {
-        mediaConstraints: {audio: true, video: false},
-        // extraHeaders: ['X-CALL-TOKEN: ' + callToken]
-    };
-    ua.call(sipCall, options);
-}
-
-function hangup() {
-    if (!session) {
-        log('Nenhuma sessão ativa para finalizar chamada.');
-        return;
-    }
-    session.terminate();
-}
-
-function attachAudioToSession(session) {
-    session.connection.addEventListener('addstream', (ev) => {
-        console.log('SIP: ' + new Date().toLocaleString('pt-BR') + ' remote audio stream adicionado');
-        const audio = new Audio();
-        audio.srcObject = ev.stream;
-        audio.play();
-    })
-}
-
-chrome.runtime.onMessage.addListener((message) => {
-    switch (message.type) {
-        case 'dial':
-            dial(message.phoneNumber);
-            break;
-        case 'hangup':
-            hangup();
-            break;
-        default:
-            console.warn('Mensagem desconhecida:', message);
-            break;
-    }
+// Ensure offscreen on startup/installation
+chrome.runtime.onInstalled.addListener(() => {
+  ensureOffscreenDocument();
+});
+chrome.runtime.onStartup?.addListener(() => {
+  ensureOffscreenDocument();
 });
 
-function log(msg) {
-    console.log('[PHONE]', msg);
-}
+// Also ensure on first message
+chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
+  // Ensure offscreen is alive before forwarding telephony messages
+  await ensureOffscreenDocument();
+
+  // Forward dial/hangup to the offscreen document. Since runtime messages are broadcast
+  // to all extension contexts, simply re-send the same message to ensure the offscreen
+  // receives it even if original came from popup.
+  if (message && (message.type === 'dial' || message.type === 'hangup')) {
+    try {
+      await chrome.runtime.sendMessage(message);
+      sendResponse?.({ ok: true });
+    } catch (e) {
+      sendResponse?.({ ok: false, error: e?.message || String(e) });
+    }
+    return true; // async response
+  }
+
+  // For other messages, ignore.
+  return false;
+});
 

@@ -8,13 +8,13 @@
 
     <div class="popup">
         <input type="text" class="input" placeholder="Telefone" />
-        <button class="button">Ligar</button>
+        <div class="buttons">
+          <button class="button" id="callBtn">Ligar</button>
+          <button class="button" id="hangupBtn">Desligar</button>
+        </div>
     </div>
     <div id="status" class="status"></div>
 
-    <script src="libs/jssip.min.js"></script>
-    <script src="libs/credentials.js"></script>
-    <script src="ua.js"></script>
     <script src="popup.js"></script>
 </body>
 </html>

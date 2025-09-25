@@ -1,23 +1,27 @@
 // popup.js
-// Atualiza o input "Telefone" com mensagens recebidas do background (WebSocket)
+// Envia comandos de discagem/encerramento para o service worker
 
 const phoneInput = document.querySelector('.input');
-const callBtn = document.querySelector('.button');
+const callBtn = document.getElementById('callBtn');
+const hangupBtn = document.getElementById('hangupBtn');
 
-callBtn.addEventListener('click', (e) => {
-    if (!phoneInput.value) {
-        alert('Por favor, insira um número de telefone.');
-        return;
-    }
-    dial(phoneInput.value)
-})
+callBtn.addEventListener('click', async () => {
+  const number = (phoneInput.value || '').trim();
+  if (!number) {
+    alert('Por favor, insira um número de telefone.');
+    return;
+  }
+  try {
+    await chrome.runtime.sendMessage({ type: 'dial', phoneNumber: number });
+  } catch (e) {
+    console.error('Falha ao enviar comando de discagem:', e);
+  }
+});
 
-// function getAudioPermission() {
-//     navigator.mediaDevices.getUserMedia({ audio: true })
-//         .then(() => {
-//             console.log('Permissão de áudio concedida.');
-//         })
-//         .catch((error) => {
-//             console.error('Erro ao obter permissão de áudio:', error);
-//         });
-// }
+hangupBtn.addEventListener('click', async () => {
+  try {
+    await chrome.runtime.sendMessage({ type: 'hangup' });
+  } catch (e) {
+    console.error('Falha ao enviar comando de desligar:', e);
+  }
+});
