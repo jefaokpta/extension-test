@@ -4,6 +4,7 @@
 const phoneInput = document.querySelector('.input');
 const callBtn = document.getElementById('callBtn');
 const hangupBtn = document.getElementById('hangupBtn');
+const answerBtn = document.getElementById('answerBtn');
 
 callBtn.addEventListener('click', async () => {
   const number = (phoneInput.value || '').trim();
@@ -18,6 +19,14 @@ callBtn.addEventListener('click', async () => {
   }
 });
 
+answerBtn.addEventListener('click', async () => {
+  try {
+    await chrome.runtime.sendMessage({ type: 'answer' });
+  } catch (e) {
+    console.error('Falha ao enviar comando de atender:', e);
+  }
+});
+
 hangupBtn.addEventListener('click', async () => {
   try {
     await chrome.runtime.sendMessage({ type: 'hangup' });
@@ -25,3 +34,4 @@ hangupBtn.addEventListener('click', async () => {
     console.error('Falha ao enviar comando de desligar:', e);
   }
 });
+

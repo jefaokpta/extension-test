@@ -38,7 +38,7 @@ function startUA() {
     sockets: [socket],
     uri: `sip:${credentials.username}@${credentials.domain}`,
     password: credentials.password,
-    register: false,
+    register: true,
   };
   ua = new JsSIP.UA(configuration);
 
@@ -157,6 +157,18 @@ function hangup() {
   }
 }
 
+function answer(){
+    if (!session) {
+        log('Nenhuma sessão ativa para atender chamada.');
+        return;
+    }
+    try {
+        session.answer();
+    } catch (e) {
+        log('Erro ao atender chamada:', e?.message || e);
+    }
+}
+
 // Message handling from service worker or popup
 chrome.runtime.onMessage.addListener((message) => {
   switch (message?.type) {
@@ -165,6 +177,9 @@ chrome.runtime.onMessage.addListener((message) => {
       break;
     case 'hangup':
       hangup();
+      break;
+    case 'answer':
+      answer();
       break;
     default:
       // ignore
