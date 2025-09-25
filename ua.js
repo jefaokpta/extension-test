@@ -2,6 +2,7 @@
 let ua;           // JsSIP.UA
 let session = null; // JsSIP.RTCSession atual
 const statusEl = document.getElementById('status');
+const BACKEND_URL = credentials.pabxUrl
 
 async function startWebphone() {
     if (!JsSIP || !JsSIP.WebSocketInterface) {
@@ -37,14 +38,15 @@ async function startWebphone() {
     ua.start();
 }
 
-startWebphone();
 document.addEventListener("DOMContentLoaded", checkPermissions);
 
 async function checkPermissions() {
     const hasPermission = await checkMicrophonePermission();
     if (!hasPermission) {
         chrome.tabs.create({ url: "permission.html" });
+        return;
     }
+    startWebphone();
 }
 
 async function checkMicrophonePermission() {
@@ -56,12 +58,13 @@ async function checkMicrophonePermission() {
     }
 }
 
-function dial(phoneNumber) {
+async function dial(phoneNumber) {
+    const callToken = await getCallToken(credentials.token)
     const sipCall = 'sip:' + phoneNumber + '@' + credentials.domain;
     log(`Chamando ${sipCall}`);
     const options = {
         mediaConstraints: {audio: true, video: false},
-        // extraHeaders: ['X-CALL-TOKEN: ' + callToken]
+        extraHeaders: ['X-CALL-TOKEN: ' + callToken]
     };
     ua.call(sipCall, options);
 }
@@ -100,5 +103,22 @@ function attachAudioToSession(session) {
 function log(msg) {
     console.log('[PHONE]', msg);
     statusEl.textContent = String(msg);
+}
+
+async function getCallToken(token) {
+    try{
+        const response = await fetch(`${BACKEND_URL}/auth/call-token`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        })
+        const data = await response.json();
+        return data.token;
+    } catch (error) {
+        console.error('Erro ao obter o token:', error.message);
+    }
+
 }
 
