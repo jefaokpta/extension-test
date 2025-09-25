@@ -1,9 +1,13 @@
+// Load JsSIP UMD build and use the global it registers (self.JsSIP) in MV3 service worker modules.
+import './libs/jssip.min.js';
+const JsSIP = self.JsSIP || globalThis.JsSIP;
+
+import { credentials } from './libs/credentials.js';
 
 let ua;           // JsSIP.UA
 let session = null; // JsSIP.RTCSession atual
-const statusEl = document.getElementById('status');
 
-async function startWebphone() {
+function startWebphone(){
     if (!JsSIP || !JsSIP.WebSocketInterface) {
         console.error('JsSIP not loaded or WebSocketInterface not available');
         return;
@@ -17,7 +21,7 @@ async function startWebphone() {
     };
     ua = new JsSIP.UA(configuration);
 
-    // Eventos do UA
+    // Eventos do UAw
     ua.on('connected', () => log('Socket conectado (WSS).'));
     ua.on('disconnected', () => log('Socket desconectado.'));
     ua.on('registered', () => log('Registrado no servidor SIP.'));
@@ -38,27 +42,10 @@ async function startWebphone() {
 }
 
 startWebphone();
-document.addEventListener("DOMContentLoaded", checkPermissions);
-
-async function checkPermissions() {
-    const hasPermission = await checkMicrophonePermission();
-    if (!hasPermission) {
-        chrome.tabs.create({ url: "permission.html" });
-    }
-}
-
-async function checkMicrophonePermission() {
-    try {
-        await navigator.mediaDevices.getUserMedia({ audio: true });
-        return true;
-    } catch (error) {
-        return false;
-    }
-}
 
 function dial(phoneNumber) {
+    log('Chamando ' + phoneNumber);
     const sipCall = 'sip:' + phoneNumber + '@' + credentials.domain;
-    log(`Chamando ${sipCall}`);
     const options = {
         mediaConstraints: {audio: true, video: false},
         // extraHeaders: ['X-CALL-TOKEN: ' + callToken]
@@ -83,22 +70,21 @@ function attachAudioToSession(session) {
     })
 }
 
-// chrome.runtime.onMessage.addListener((message) => {
-//     switch (message.type) {
-//         case 'dial':
-//             dial(message.phoneNumber);
-//             break;
-//         case 'hangup':
-//             hangup();
-//             break;
-//         default:
-//             console.warn('Mensagem desconhecida:', message);
-//             break;
-//     }
-// });
+chrome.runtime.onMessage.addListener((message) => {
+    switch (message.type) {
+        case 'dial':
+            dial(message.phoneNumber);
+            break;
+        case 'hangup':
+            hangup();
+            break;
+        default:
+            console.warn('Mensagem desconhecida:', message);
+            break;
+    }
+});
 
 function log(msg) {
     console.log('[PHONE]', msg);
-    statusEl.textContent = String(msg);
 }
 

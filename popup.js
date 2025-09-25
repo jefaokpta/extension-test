@@ -9,7 +9,7 @@ callBtn.addEventListener('click', (e) => {
         alert('Por favor, insira um número de telefone.');
         return;
     }
-    chrome.runtime.sendMessage({ type: 'dial', phoneNumber: phoneInput.value });
+    dial(phoneInput.value)
 })
 
 // function getAudioPermission() {
